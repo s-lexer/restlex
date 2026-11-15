@@ -2118,7 +2118,18 @@ fn query_latest(db: &Connection) -> Vec<ReportRow> {
         FROM reports r LEFT JOIN groups g ON r.group_id = g.id
         WHERE r.id IN (SELECT MAX(id) FROM reports GROUP BY profile)
         ORDER BY g.sort_order, g.name NULLS LAST, r.profile";
-    db.prepare(sql).ok().map(|mut s| s.query_map([], row_mapper).ok().map(|r| r.flatten().collect()).unwrap_or_default()).unwrap_or_default()
+    let mut rows: Vec<ReportRow> = db.prepare(sql).ok().map(|mut s| s.query_map([], row_mapper).ok().map(|r| r.flatten().collect()).unwrap_or_default()).unwrap_or_default();
+    // Версия в отчёте — на момент запуска бэкапа (раз в сутки), поэтому в «последних» показываем
+    // живую версию хоста из host_info. Mini/скрипты (нечисловая версия) и неизвестные хосты не трогаем.
+    let hosts = host_info_map(db);
+    for r in &mut rows {
+        let numeric = r.agent_version.as_deref().map_or(true, |a| a.trim().is_empty() || a.trim().starts_with(|c: char| c.is_ascii_digit()));
+        if !numeric { continue; }
+        if let Some((g, a)) = r.host.as_deref().and_then(|h| hosts.get(h)) {
+            if !g.is_empty() && !a.is_empty() { r.launcher_version = Some(g.clone()); r.agent_version = Some(a.clone()); }
+        }
+    }
+    rows
 }
 
 fn query_history(db: &Connection, profile: &str, limit: usize) -> Vec<ReportRow> {
