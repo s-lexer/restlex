@@ -89,7 +89,6 @@ QProgressBar::chunk { background:#4CAF50; border-radius:2px; }
 QComboBox { background:#ffffff; border:1px solid #cccccc; border-radius:3px;
             padding:3px 6px; color:#1a1a1a; }
 QComboBox::drop-down { border-left:1px solid #cccccc; width:20px; background:#e8e8e8; }
-QComboBox::down-arrow { width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:6px solid #444; margin:auto; }
 QComboBox QAbstractItemView { background:#ffffff; border:1px solid #aaaaaa;
                                selection-background-color:#4a80d0; }
 QLabel { color:#1a1a1a; background:transparent; }
@@ -3167,6 +3166,8 @@ class RestlexUI(QMainWindow):
         self._bk_banner_timer.start()
         QTimer.singleShot(300, self._refresh_global_bk_banner)
         QTimer.singleShot(1500, self._startup_agent_check)
+        if not self._cli_run_backup_pid:
+            QTimer.singleShot(2500, self._offer_restic_download)
         self._service_badge_timer = QTimer(self)
         self._service_badge_timer.setInterval(3000)
         self._service_badge_timer.timeout.connect(self._refresh_service_badge)
@@ -5316,6 +5317,21 @@ class RestlexUI(QMainWindow):
             return value
         managed = self.cfg.managed_restic_path()
         return str(managed) if managed.exists() else "restic"
+
+    def _offer_restic_download(self):
+        """Свежая установка: без restic ни один бэкап не пройдёт, а кнопка «Загрузить»
+        спрятана в настройках. Спрашиваем, только если restic не найден нигде."""
+        if self._closing or (hasattr(self, "edit_restic") and self.edit_restic.text().strip()):
+            return
+        if self.cfg.managed_restic_path().exists() or shutil.which("restic"):
+            return
+        r = QMessageBox.question(
+            self, "restic",
+            "restic не найден — без него бэкапы не запустятся.\n\n"
+            "Скачать последнюю версию restic с GitHub сейчас?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        if r == QMessageBox.Yes:
+            self._download_restic_release()
 
     def _refresh_restic_status_label(self):
         raw_value = getattr(self, "edit_restic", QLineEdit()).text().strip() if hasattr(self, "edit_restic") else ""
@@ -12978,6 +12994,22 @@ def _install_crash_logger():
 
     sys.excepthook = _hook
 
+def _combo_arrow_css() -> str:
+    """Стрелка для QComboBox. CSS-треугольник из border Qt не умеет (рисовался чёрный
+    квадрат), а без правила ::down-arrow при стилизованном ::drop-down стрелки нет вовсе.
+    Рисуем 10x6 PNG во временную папку — вызывать после создания QApplication."""
+    try:
+        path = Path(tempfile.gettempdir()) / "restlex_combo_arrow.png"
+        pm = QPixmap(10, 6); pm.fill(Qt.transparent)
+        p = QPainter(pm); p.setRenderHint(QPainter.Antialiasing)
+        p.setPen(Qt.NoPen); p.setBrush(QColor("#444444"))
+        p.drawPolygon(QPointF(0, 0), QPointF(10, 0), QPointF(5, 6)); p.end()
+        pm.save(str(path), "PNG")
+        return "\nQComboBox::down-arrow { image: url(%s); width:10px; height:6px; }\n" % path.as_posix()
+    except Exception:
+        return ""
+
+
 def _default_language(cfg, system_lang: str) -> str:
     """Существующая установка (профили или настройки организации) остаётся на
     русском: английская локаль сервера не должна внезапно переключить GUI и
@@ -13062,7 +13094,7 @@ def main():
     set_windows_app_id()
     app=QApplication(sys.argv)
     app.setFont(QFont("Segoe UI",9))
-    app.setStyleSheet(STYLE)
+    app.setStyleSheet(STYLE + _combo_arrow_css())
     _init_language(app)
     ic = app_icon()
     if not ic.isNull():

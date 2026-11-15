@@ -43,7 +43,7 @@ from PyQt5.QtGui import QFont  # noqa: E402
 OUT.mkdir(parents=True, exist_ok=True)
 app = QApplication(sys.argv)
 app.setFont(QFont("Segoe UI", 9))
-app.setStyleSheet(restlex.STYLE)
+app.setStyleSheet(restlex.STYLE + restlex._combo_arrow_css())
 restlex._init_language(app)
 n = [0]
 
