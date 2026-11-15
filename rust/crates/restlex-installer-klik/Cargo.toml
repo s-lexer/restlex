@@ -1,0 +1,23 @@
+[package]
+name    = "restlex-installer-klik"
+version = "1.0.2"
+edition = "2021"
+
+[[bin]]
+name = "restlex-installer-klik"
+path = "src/main.rs"
+
+[dependencies]
+anyhow     = { workspace = true }
+serde_json = { workspace = true }
+reqwest    = { workspace = true }
+windows-sys = { version = "0.52", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_Controls",
+    "Win32_System_LibraryLoader",
+    "Win32_Graphics_Gdi",
+] }
+
+[build-dependencies]
+winres = "0.1"

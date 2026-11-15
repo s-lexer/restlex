@@ -1,0 +1,38 @@
+[package]
+name = "restlex-agent"
+version = "1.8.16"
+edition.workspace = true
+
+[[bin]]
+name = "restlex-agent"
+path = "src/main.rs"
+
+[dependencies]
+restlex-core = { path = "../restlex-core" }
+serde        = { workspace = true }
+serde_json   = { workspace = true }
+tokio        = { workspace = true }
+anyhow       = { workspace = true }
+chrono       = { workspace = true }
+tracing      = { workspace = true }
+tracing-subscriber = { workspace = true }
+tracing-appender   = { workspace = true }
+parking_lot  = { workspace = true }
+axum         = { version = "0.7", features = ["macros"] }
+notify       = "6"
+rand         = "0.8"
+reqwest      = { workspace = true }
+sha2         = "0.10"
+hex          = "0.4"
+regex        = "1"
+
+[dev-dependencies]
+# tower/util нужен только тесту роутера (ServiceExt::oneshot) — в рантайме
+# агента tower не используется, поэтому не тянем его в релизный бинарник.
+tower        = { version = "0.5", features = ["util"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-service = "0.7"
+
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"

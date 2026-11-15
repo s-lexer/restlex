@@ -1,0 +1,14 @@
+[package]
+name    = "restlex-installer"
+version = "1.0.5"
+edition = "2021"
+
+[[bin]]
+name = "restlex-installer"
+path = "src/main.rs"
+
+[dependencies]
+anyhow     = { workspace = true }
+serde      = { workspace = true }
+serde_json = { workspace = true }
+reqwest    = { workspace = true }

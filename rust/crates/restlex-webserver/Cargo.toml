@@ -1,0 +1,35 @@
+[package]
+name = "restlex-webserver"
+version = "6.0.53"
+edition.workspace = true
+
+[[bin]]
+name = "restlex-webserver"
+path = "src/main.rs"
+
+[dependencies]
+restlex-core = { path = "../restlex-core" }
+serde        = { workspace = true }
+serde_json   = { workspace = true }
+tokio        = { workspace = true }
+anyhow       = { workspace = true }
+chrono       = { workspace = true }
+tracing      = { workspace = true }
+tracing-subscriber = { workspace = true }
+tracing-appender   = { workspace = true }
+parking_lot  = { workspace = true }
+axum         = { version = "0.7", features = ["macros"] }
+rusqlite     = { version = "0.31", features = ["bundled"] }
+rand         = "0.8"
+sha2         = "0.10"
+hmac         = "0.12"
+percent-encoding = "2"
+clap         = { version = "4", features = ["derive"] }
+regex        = "1"
+tokio-stream = { version = "0.1", features = ["sync"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-service = "0.7"
+
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"
